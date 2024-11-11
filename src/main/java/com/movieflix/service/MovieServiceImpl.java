@@ -3,6 +3,8 @@ package com.movieflix.service;
 import com.movieflix.Repositories.MovieRepository;
 import com.movieflix.dto.MovieDto;
 import com.movieflix.entities.Movie;
+import com.movieflix.exceptions.FileExistsException;
+import com.movieflix.exceptions.MovieNotFoundException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,7 +39,7 @@ public class MovieServiceImpl implements MovieService {
 
         //1. Upload file len
         if (Files.exists(Paths.get(posterPath + File.separator + file.getOriginalFilename()))) {
-            throw new RuntimeException("File đã tồn tại, hãy chọn file khác !!!");
+            throw new FileExistsException("File đã tồn tại, hãy chọn file khác !!!");
         }
         String uploadedFilename = fileService.uploadFile(posterPath, file);
         //2. Dat gia tri truong poster nhu mot filename
@@ -70,9 +72,10 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public MovieDto getMovie(Integer movieId) {
+    public MovieDto getMovie(Integer movieId) throws MovieNotFoundException {
         //1. Kiem tra xem IdMovie co ton tai trong database hay khong
-        Movie movie = movieRepository.findById(movieId).orElseThrow(() -> new RuntimeException("Không tìm thấy phim"));
+        Movie movie = movieRepository.findById(movieId)
+                .orElseThrow(() -> new MovieNotFoundException("Không tìm thấy phim có id = " + movieId));
         //2. tao UrlPoster
         String posterUrl = baseUrl + "/file/" + movie.getPoster();
         //3. tao du lieu MovieDto va return
@@ -113,9 +116,10 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public MovieDto updateMovie(Integer idMovie, MovieDto movieDto, MultipartFile file) throws IOException {
+    public MovieDto updateMovie(Integer idMovie, MovieDto movieDto, MultipartFile file) throws IOException, MovieNotFoundException {
         //1. Kiểm tra xem idMovie có trong database hay không
-        Movie mv = movieRepository.findById(idMovie).orElseThrow(() -> new RuntimeException("Không tìm thấy phim"));
+        Movie mv = movieRepository.findById(idMovie)
+                .orElseThrow(() -> new MovieNotFoundException("Không tìm thấy phim có id = " + idMovie));
         //2. Nếu không cập nhật file, không làm gì cả
         //   Nếu có cập nhật file, xóa file hiện có và upload file mới
         String fileName = mv.getPoster();
@@ -154,9 +158,10 @@ public class MovieServiceImpl implements MovieService {
     }
 
     @Override
-    public String deleteMovie(Integer movieId) throws IOException {
+    public String deleteMovie(Integer movieId) throws IOException, MovieNotFoundException {
         //1. Kiểm tra xem phim có tồn tại trong database hay không
-        Movie mv = movieRepository.findById(movieId).orElseThrow(() -> new RuntimeException("Không tìm thấy phim"));
+        Movie mv = movieRepository.findById(movieId)
+                .orElseThrow(() -> new MovieNotFoundException("Không tìm thấy phim có id = " + movieId));
         Integer id = mv.getIdMovie();
         //2. Xóa file của phim cần xóa
         Files.deleteIfExists(Paths.get(posterPath + File.separator + mv.getPoster()));
