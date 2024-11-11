@@ -25,7 +25,7 @@ public class FileServiceImpl implements FileService{
             f.mkdirs();
         }
         //Copy File và upload File tới đường dẫn
-        Files.copy(file.getInputStream(), Paths.get(filePath), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(file.getInputStream(), Paths.get(filePath));
         return fileName;
     }
 

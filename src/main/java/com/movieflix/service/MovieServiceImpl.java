@@ -7,7 +7,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,12 +36,15 @@ public class MovieServiceImpl implements MovieService {
     public MovieDto addMovie(MovieDto movieDto, MultipartFile file) throws IOException {
 
         //1. Upload file len
+        if (Files.exists(Paths.get(posterPath + File.separator + file.getOriginalFilename()))) {
+            throw new RuntimeException("File đã tồn tại, hãy chọn file khác !!!");
+        }
         String uploadedFilename = fileService.uploadFile(posterPath, file);
         //2. Dat gia tri truong poster nhu mot filename
         movieDto.setPoster(uploadedFilename);
         //3. map du lieu vao Movie
         Movie movie = new Movie(
-                movieDto.getIdMovie(),
+                null,
                 movieDto.getTitle(),
                 movieDto.getDirector(),
                 movieDto.getStudio(),
@@ -104,5 +110,60 @@ public class MovieServiceImpl implements MovieService {
             movieDtos.add(movieDto);
         }
         return movieDtos;
+    }
+
+    @Override
+    public MovieDto updateMovie(Integer idMovie, MovieDto movieDto, MultipartFile file) throws IOException {
+        //1. Kiểm tra xem idMovie có trong database hay không
+        Movie mv = movieRepository.findById(idMovie).orElseThrow(() -> new RuntimeException("Không tìm thấy phim"));
+        //2. Nếu không cập nhật file, không làm gì cả
+        //   Nếu có cập nhật file, xóa file hiện có và upload file mới
+        String fileName = mv.getPoster();
+        if (file != null){
+            Files.deleteIfExists(Paths.get(posterPath + File.separator + fileName));
+            fileName = fileService.uploadFile(posterPath, file);
+        }
+        //3. set giá trị poster cho movieDto
+        movieDto.setPoster(fileName);
+        //4. Ánh xạ qua Movie
+        Movie movie = new Movie(
+                mv.getIdMovie(),
+                movieDto.getTitle(),
+                movieDto.getDirector(),
+                movieDto.getStudio(),
+                movieDto.getMovieCast(),
+                movieDto.getReleaseYear(),
+                movieDto.getPoster()
+        );
+
+        //5. lưu Movie vào database, trả về Movie đã lưu
+        Movie uploadedMovie = movieRepository.save(movie);
+        //6. Tạo ra posterUrl
+        String posterUrl = baseUrl + "/file/" + fileName;
+        //7. Ánh xạ lại qua MovieDto và trả về
+        return new MovieDto(
+                movie.getIdMovie(),
+                movie.getTitle(),
+                movie.getDirector(),
+                movie.getStudio(),
+                movie.getMovieCast(),
+                movie.getReleaseYear(),
+                movie.getPoster(),
+                posterUrl
+        );
+    }
+
+    @Override
+    public String deleteMovie(Integer movieId) throws IOException {
+        //1. Kiểm tra xem phim có tồn tại trong database hay không
+        Movie mv = movieRepository.findById(movieId).orElseThrow(() -> new RuntimeException("Không tìm thấy phim"));
+        Integer id = mv.getIdMovie();
+        //2. Xóa file của phim cần xóa
+        Files.deleteIfExists(Paths.get(posterPath + File.separator + mv.getPoster()));
+        //3. Xóa phim
+        movieRepository.delete(mv);
+
+
+        return "Đã xóa phim có id = " + id;
     }
 }
