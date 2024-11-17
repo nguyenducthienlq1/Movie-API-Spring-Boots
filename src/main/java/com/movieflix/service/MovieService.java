@@ -1,6 +1,7 @@
 package com.movieflix.service;
 
 import com.movieflix.dto.MovieDto;
+import com.movieflix.dto.MoviePageResponse;
 import com.movieflix.exceptions.MovieNotFoundException;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -18,4 +19,9 @@ public interface MovieService {
     MovieDto updateMovie(Integer idMovie, MovieDto movieDto, MultipartFile file) throws IOException, MovieNotFoundException;
 
     String deleteMovie(Integer movieId) throws IOException, MovieNotFoundException;
+
+    MoviePageResponse getAllMoviesWithPagination(Integer pageNumber, Integer pageSize);
+
+    MoviePageResponse getAllMoviesWithPaginationAndSorting(Integer pageNumber, Integer pageSize
+                                                ,String sortField, String sortDirection);
 }
