@@ -29,7 +29,7 @@ public class AuthService {
                 .email(registerRequest.getEmail())
                 .username(registerRequest.getUsername())
                 .password(passwordEncoder.encode(registerRequest.getPassword()))
-                .role(UserRole.USER)
+                .userRole(UserRole.USER)
                 .build();
         User savedUser = userRepository.save(user);
         var accessToken = jwtService.generateToken(savedUser);
